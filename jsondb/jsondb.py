@@ -167,10 +167,7 @@ class JSONDBTable(object):
         Creates if condition not matched in the JSONDBTable
         '''
         
-        condition_found = False
-        
-        if condition is None:
-            condition_found = True
+        condition_matched = False
         
         for dictionary in self._data:
             
@@ -181,22 +178,23 @@ class JSONDBTable(object):
                 
                 if condition(dictionary):
                     dictionary.update(update_dict)
-                    condition_found = True
+                    condition_matched = True
         
-        if not condition_found:
+        if condition is None or not condition_matched:
             self.add(update_dict)
     
     # DELETE A DICTIONARY
-    def delete(self, condition=None):
+    def delete_all(self):
         '''
         '''
         
-        if condition is None:
-            self._data = []
-        
-        #else:
+        self._data = []
         
     # CONVENIENCE/SUGAR
+    def append(self, item):
+        
+        self.add(item)
+    
         
     # MAGIC METHODS
     def __repr__(self):
@@ -207,3 +205,8 @@ class JSONDBTable(object):
     
     def __len__(self):
         return len(self._data)
+    
+    def __iter__(self):
+        
+        for item in self._data:
+            yield item
