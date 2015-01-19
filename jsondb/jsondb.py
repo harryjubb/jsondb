@@ -162,7 +162,7 @@ class JSONDBTable(object):
     
     # UPDATE A DICTIONARY
     # CREATES IT IF THE CONDITION ISN'T FOUND
-    def update(self, update_dict, condition=None):
+    def update(self, update_dict, condition=None, only_first=True):
         '''
         Creates if condition not matched in the JSONDBTable
         '''
@@ -179,6 +179,9 @@ class JSONDBTable(object):
                 if condition(dictionary):
                     dictionary.update(update_dict)
                     condition_matched = True
+            
+            if condition_matched and only_first:
+                break
         
         if condition is None or not condition_matched:
             self.add(update_dict)
