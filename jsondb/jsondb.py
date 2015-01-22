@@ -22,10 +22,10 @@ def where(key, function, value, rev=False):
     
     def comp_key_value(dictionary):
         
-        try:
-            args = (dictionary[key], value)
-        except KeyError:
+        if key not in dictionary:
             return False
+        
+        args = (dictionary[key], value)
         
         # SPECIFY REVERSED ORDER FOR SPECIFIC FUNCTIONS
         # OR USER CAN SPECIFY WITH THE `rev` KWARG
@@ -79,13 +79,14 @@ class JSONDBTable(object):
         self.sync()
     
     # INITIALISATION
-    def __init__(self, filename):
+    def __init__(self, filename, indexes=[]):
 
         self.filename = filename        
-        self._open()
+        self._open(indexes=indexes)
+            
     
     # FILESYSTEM INTERFACE
-    def _open(self):
+    def _open(self, indexes=[]):
         '''
         Load in JSON data from file if possible.
         '''
@@ -99,6 +100,12 @@ class JSONDBTable(object):
         else:
             
             self._data = []
+        
+        self._indexes = {}
+        
+        if indexes:
+            for index in indexes:
+                self.add_index(index)
 
     def sync(self):
         '''
@@ -126,7 +133,27 @@ class JSONDBTable(object):
         if self._data:
             if any([not isinstance(x, dict) for x in self._data]):
                 raise ValueError('JSON DB table validation failed for data: {}'.format(self._data))
-
+    
+    # INDEXES
+    def add_index(self, key):
+        '''
+        '''
+        
+        self._indexes[key] = dict((item[key], e) for e, item in enumerate(self._data))
+        
+        #if key not in self._indexes:
+        #    self._indexes[key] = {}
+        #
+        #for e, doc in enumerate(self._data):
+        #    
+        #    if key not in doc:
+        #        raise IndexError('Key {} is an index and must be in the dict.'.format(key))
+        #    
+        #    if doc[key] in self._indexes[key]:
+        #        raise IndexError('Key {} must be unique (duplicate is {})'.format(key, doc[key]))
+        #    
+        #    self._indexes[key][doc[key]] = e
+    
     # CRUD
     
     # CREATE A DICTIONARY
@@ -138,20 +165,36 @@ class JSONDBTable(object):
             raise ValueError('Only dict objects can be added to a JSON DB table.')
         
         self._data.append(item)
+        
+        # UPDATE INDEXES
+        for key in self._indexes:
+            self._indexes[key][item[key]] = len(self._data) - 1
 
     # READ ONE OR MORE DICTIONARIES
-    def get(self, conditions=None):
+    def get(self, condition=None):
         '''
         '''
         
-        if conditions is None:
+        if condition is None:
             return self._data
         
         else:
             
-            conditions = make_iterable(conditions)
+            if (isinstance(condition, tuple) or isinstance(condition, list)) \
+               and len(condition) == 2:
+                
+                key_name = condition[0]
+                key_value = condition[1]
+                
+                if key_name in self._indexes:
+                    return [self._data[self._indexes[key_name][key_value]]]
+                else:
+                    raise IndexError('Index not found on {}'.format(key_name))
+                
+            else:
+                return [x for x in self._data if condition(x)]
             
-            return [x for x in self._data if any(condition(x) for condition in conditions)]
+            return []
     
     def get_one(self, conditions=None):
         
@@ -169,22 +212,40 @@ class JSONDBTable(object):
         
         condition_matched = False
         
-        for dictionary in self._data:
+        if (isinstance(condition, tuple) or isinstance(condition, list)) \
+           and len(condition) == 2:
             
-            if condition is None:
-                dictionary.update(update_dict)
+            key_name = condition[0]
+            key_value = condition[1]
             
+            if key_name in self._indexes:
+                if key_value in self._indexes[key_name]:
+                    self._data[self._indexes[key_name][key_value]].update(update_dict)
+                else:
+                    # ADD IF NOT EXISTS
+                    self.add(update_dict)
+                    #raise IndexError('"{}" not in "{}" index'.format(key_value, key_name))
             else:
-                
-                if condition(dictionary):
-                    dictionary.update(update_dict)
-                    condition_matched = True
+                raise IndexError('Index not found on {}'.format(key_name))
             
-            if condition_matched and only_first:
-                break
+        else:
         
-        if condition is None or not condition_matched:
-            self.add(update_dict)
+            for dictionary in self._data:
+                
+                if condition is None:
+                    dictionary.update(update_dict)
+                
+                else:
+                    
+                    if condition(dictionary):
+                        dictionary.update(update_dict)
+                        condition_matched = True
+                
+                if condition_matched and only_first:
+                    break
+            
+            if condition is None or not condition_matched:
+                self.add(update_dict)
     
     # DELETE A DICTIONARY
     def delete_all(self):
