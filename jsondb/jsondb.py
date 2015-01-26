@@ -139,20 +139,15 @@ class JSONDBTable(object):
         '''
         '''
         
-        self._indexes[key] = dict((item[key], e) for e, item in enumerate(self._data))
+        self._indexes[key] = {} #dict((item[key], e) for e, item in enumerate(self._data))
         
-        #if key not in self._indexes:
-        #    self._indexes[key] = {}
-        #
-        #for e, doc in enumerate(self._data):
-        #    
-        #    if key not in doc:
-        #        raise IndexError('Key {} is an index and must be in the dict.'.format(key))
-        #    
-        #    if doc[key] in self._indexes[key]:
-        #        raise IndexError('Key {} must be unique (duplicate is {})'.format(key, doc[key]))
-        #    
-        #    self._indexes[key][doc[key]] = e
+        for e, item in enumerate(self._data):
+            
+            if item[key] in self._indexes:
+                raise KeyError('Indexes must be unique.')
+            
+            else:
+                self._indexes[key][item[key]] = e
     
     # CRUD
     
