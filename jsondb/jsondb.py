@@ -182,7 +182,13 @@ class JSONDBTable(object):
                 key_value = condition[1]
                 
                 if key_name in self._indexes:
-                    return [self._data[self._indexes[key_name][key_value]]]
+                    
+                    try:
+                        return [self._data[self._indexes[key_name][key_value]]]
+                    except KeyError:
+                        #print 'WARNING: Key not found ({})'.format(key_value)
+                        return []
+                    
                 else:
                     raise IndexError('Index not found on {}'.format(key_name))
                 
