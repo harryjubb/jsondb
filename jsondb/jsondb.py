@@ -1,4 +1,5 @@
 import collections
+import math
 import operator
 import os
 import re
@@ -120,6 +121,8 @@ class JSONDBTable(object):
         # !!! OVERWRITES FILE CONTENTS
         with open(self.filename, 'wb') as fo:
             json.dump(self._data, fo)
+            fo.flush()
+            os.fsync(fo.fileno())
     
     # FIDELITY CHECKING
     def _validate(self):
