@@ -119,7 +119,7 @@ class JSONDBTable(object):
 
         # WRITE TO FILE
         # !!! OVERWRITES FILE CONTENTS
-        with open(self.filename, 'wb') as fo:
+        with open(self.filename, 'wb', 0) as fo:
             json.dump(self._data, fo)
             fo.flush()
             os.fsync(fo.fileno())
