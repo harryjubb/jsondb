@@ -111,7 +111,7 @@ class JSONDBTable(object):
     def sync(self):
         '''
         Write everything in the data structure
-        to the JSON file on disk.
+        to the JSON file on disk.gi
         '''
         
         # FIDELITY CHECK
@@ -120,7 +120,7 @@ class JSONDBTable(object):
         # WRITE TO FILE
         # !!! OVERWRITES FILE CONTENTS
         with open(self.filename, 'wb', 0) as fo:
-            json.dump(self._data, fo)
+            json.dump(self._data, fo, separators=(',', ':'))
             fo.flush()
             os.fsync(fo.fileno())
     
@@ -165,8 +165,19 @@ class JSONDBTable(object):
         self._data.append(item)
         
         # UPDATE INDEXES
+        # print self._indexes.keys()
         for key in self._indexes:
-            self._indexes[key][item[key]] = len(self._data) - 1
+            # print key
+            # print item
+            # print item[key]
+            # print self._indexes[key]
+
+            if key not in item:
+                print 'WARNING: INDEX KEY NOT IN ITEM, REMOVING'
+                self._data = self._data[:-1]
+
+            else:
+                self._indexes[key][item[key]] = len(self._data) - 1
 
     # READ ONE OR MORE DICTIONARIES
     def get(self, condition=None):
@@ -221,7 +232,7 @@ class JSONDBTable(object):
             
             key_name = condition[0]
             key_value = condition[1]
-            
+
             if key_name in self._indexes:
                 if key_value in self._indexes[key_name]:
                     self._data[self._indexes[key_name][key_value]].update(update_dict)
